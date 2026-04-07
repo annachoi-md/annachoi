@@ -1,44 +1,16 @@
 import { Button } from "@clovirtualfashion/components/button";
-import { LabelBadge } from "@clovirtualfashion/components/badge";
 import { Typography } from "@clovirtualfashion/components/typography";
+import { PlanPeriodLabelBadge } from "./PlanPeriodLabelBadge";
 import { AnnualToggle } from "./AnnualToggle";
 import { ConnectCommunityCard } from "./ConnectCommunityCard";
 import { StartNowDownloadDropdown } from "./StartNowDownloadDropdown";
+import { TrustedByLogoMarquee } from "./TrustedByLogoMarquee";
+import { PlanDesktopResponsiveWrap } from "./PlanDesktopResponsiveWrap";
+import PlanScreenMobile375 from "./PlanScreenMobile375";
 
 /** Figma ooZfmJHT3eToaXmzD2a0Dd · node 5206:2697 — MCP asset URLs (token fallbacks = design values) */
 const img02 = "https://www.figma.com/api/mcp/asset/126ad3b3-7406-461c-956a-ff7e70c302e6";
 const img01 = "https://www.figma.com/api/mcp/asset/d134e5fb-1ab9-4587-815d-1eaa1069eb02";
-const imgSuckerpunch2X =
-  "https://www.figma.com/api/mcp/asset/5a689cc3-2397-4396-8a49-ecd3f6f54a72";
-const imgMicrosoft2X =
-  "https://www.figma.com/api/mcp/asset/811df34c-653a-49a5-851e-9b9fe9dfa1aa";
-const imgPlaystation2X =
-  "https://www.figma.com/api/mcp/asset/f7f292b5-0c27-4098-b31c-e0dd3303bf8c";
-const imgHbo2X = "https://www.figma.com/api/mcp/asset/197fa665-f319-4da0-b6a6-361175e5f693";
-const imgWbGames2X =
-  "https://www.figma.com/api/mcp/asset/20827977-f5e8-43aa-a768-6d2137eccfb3";
-const imgDexterStudiosB12X =
-  "https://www.figma.com/api/mcp/asset/b594c63f-33fc-4004-bc0d-3d7ac4d0b0d2";
-const imgNcsoft2X =
-  "https://www.figma.com/api/mcp/asset/b16ada62-7aaa-463c-8d81-c3fa736b1265";
-const imgPanasonic2X =
-  "https://www.figma.com/api/mcp/asset/aba500cc-df03-498c-8d6e-4e19eaefddfd";
-const imgIkea2X = "https://www.figma.com/api/mcp/asset/638cd308-e22e-489b-b71a-e989d5ac3bf2";
-const imgBlur2X = "https://www.figma.com/api/mcp/asset/4dc1ab62-037d-4e55-943d-d8d04d9108b6";
-
-/** One cycle of the trusted-by strip (duplicated in marquee for seamless loop). */
-const TRUSTED_LOGO_STRIP: { src: string; box: string }[] = [
-  { src: imgSuckerpunch2X, box: "relative h-[40px] w-[53px] shrink-0" },
-  { src: imgMicrosoft2X, box: "relative h-[60px] w-[120px] shrink-0" },
-  { src: imgPlaystation2X, box: "relative h-[40px] w-[52.5px] shrink-0" },
-  { src: imgHbo2X, box: "relative h-[28px] w-[68px] shrink-0" },
-  { src: imgWbGames2X, box: "relative h-[45px] w-[43px] shrink-0" },
-  { src: imgDexterStudiosB12X, box: "relative h-[28px] w-[79.5px] shrink-0" },
-  { src: imgNcsoft2X, box: "relative h-[30px] w-[120px] shrink-0" },
-  { src: imgPanasonic2X, box: "relative h-[24px] w-[149.5px] shrink-0" },
-  { src: imgIkea2X, box: "relative h-[45px] w-[88.5px] shrink-0" },
-  { src: imgBlur2X, box: "relative h-[40px] w-[31px] shrink-0" },
-];
 
 const imgSymbols =
   "https://www.figma.com/api/mcp/asset/bd999d0f-569c-4916-99cd-cbcb61dc1c2f";
@@ -82,57 +54,12 @@ function MdSymbolPrimary({ className }: { className?: string }) {
   );
 }
 
-function TrustedByLogoMarquee() {
-  return (
-    <div
-      className="relative h-[120px] w-full overflow-hidden"
-      aria-label="Brands that trust Marvelous Designer"
-    >
-      <div className="trusted-by-logo-marquee-track">
-        {[0, 1].map((copy) => (
-          <div
-            key={copy}
-            className="flex shrink-0 items-center gap-[80px] opacity-70"
-            aria-hidden={copy === 1}
-          >
-            {TRUSTED_LOGO_STRIP.map((logo, i) => (
-              <div key={`${copy}-${i}`} className={logo.box}>
-                <img
-                  alt=""
-                  className="pointer-events-none absolute inset-0 size-full max-w-none object-cover"
-                  src={logo.src}
-                />
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /** Grayscale/Solid/G5 — inline border beats CLO/Tailwind cascade (avoids white `currentColor` stroke). */
 const PLAN_CARD_BORDER_STYLE = {
   borderWidth: 1,
   borderStyle: "solid" as const,
   borderColor: "#525259",
 };
-
-/** Plan period chip — dark: fill Grayscale/Solid/G3, stroke G7 (`data-theme=dark` CSS vars). */
-function PlanPeriodLabelBadge({ text }: { text: string }) {
-  return (
-    <LabelBadge
-      text={text}
-      color="custom"
-      variant="stroke"
-      size="l"
-      bgColor="var(--color-grayscale-solid-g3)"
-      textColor="var(--color-grayscale-solid-g7)"
-      strokeColor="var(--color-grayscale-solid-g7)"
-      className="shrink-0"
-    />
-  );
-}
 
 function FeatureRows() {
   return (
@@ -192,7 +119,7 @@ function PriceBlock() {
 const planCardClass =
   "relative box-border h-[593px] w-[508px] shrink-0 overflow-clip rounded-[12px] bg-[#121214]";
 
-export default function PlanScreen() {
+function PlanScreenDesktop() {
   return (
     <div
       className="relative mx-auto h-[3517px] w-[1920px] shrink-0 bg-[#121214]"
@@ -614,5 +541,20 @@ export default function PlanScreen() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function PlanScreen() {
+  return (
+    <>
+      <div className="plan-view-desktop-1920 w-full min-w-0">
+        <PlanDesktopResponsiveWrap>
+          <PlanScreenDesktop />
+        </PlanDesktopResponsiveWrap>
+      </div>
+      <div className="plan-view-mobile-375">
+        <PlanScreenMobile375 />
+      </div>
+    </>
   );
 }

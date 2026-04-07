@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { Poppins } from "next/font/google";
 import "@clovirtualfashion/components/styles/globals.css";
 import "./trusted-logos-marquee.css";
+import "./plan-viewport.css";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -20,7 +21,7 @@ export default function PlanLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div
-      className={`${poppins.className} w-full overflow-x-auto bg-[#121214]`}
+      className={`${poppins.className} w-full min-w-0 flex-1 overflow-x-auto bg-[#121214]`}
       data-theme="dark"
       data-theme-product="md"
       style={

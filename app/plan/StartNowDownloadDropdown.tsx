@@ -2,140 +2,153 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Poppins } from "next/font/google";
 import { Button } from "@clovirtualfashion/components/button";
 import { DropdownDownIcon, DropdownUpIcon } from "@clovirtualfashion/components/icon";
+import { MenuList, type MenuListItem } from "@clovirtualfashion/components/menuList";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+});
 
 const GAP_PX = 4;
+/** Trigger보다 좁으면 L 사이즈 라벨이 말줄임 됨 — 한 줄 전체 표시용 최소 너비 */
+const MENU_LIST_MIN_WIDTH_PX = 300;
 
-const MENU_ITEMS = [
+const MENU_ITEMS: MenuListItem[] = [
   { id: "mac", label: "Mac Download" },
-  { id: "win", label: "Window Download" },
-] as const;
+  { id: "win", label: "Windows Download" },
+];
 
-type MenuCoords = { top: number; left: number; width: number };
+type TriggerSize = "l" | "xl";
 
-function getTriggerButton(root: HTMLElement | null): HTMLButtonElement | null {
+/** 뷰포트 기준 앵커: `placement="bottom-left"` + `offset`으로 버튼 하단에서 간격 적용 */
+type ViewportAnchor = [left: number, bottom: number];
+
+function readButtonViewportAnchor(root: HTMLElement | null): ViewportAnchor | null {
   if (!root) return null;
   const btn = root.querySelector("button");
-  return btn instanceof HTMLButtonElement ? btn : null;
+  const el = btn instanceof HTMLButtonElement ? btn : root;
+  const r = el.getBoundingClientRect();
+  return [r.left, r.bottom];
 }
 
-export function StartNowDownloadDropdown() {
+export function StartNowDownloadDropdown({
+  buttonSize = "xl",
+}: {
+  /** M375 plan card (Figma 5228:3003): `l` — desktop row keeps `xl`. */
+  buttonSize?: TriggerSize;
+} = {}) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [coords, setCoords] = useState<MenuCoords | null>(null);
+  const [anchor, setAnchor] = useState<ViewportAnchor | null>(null);
+  const [portalClient, setPortalClient] = useState(false);
+  const [menuPortalHost, setMenuPortalHost] = useState<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  /** MenuList는 RefObject만 받으므로, state 노드와 동기화 */
+  const portalContainerRef = useRef<HTMLDivElement | null>(null);
+  portalContainerRef.current = menuPortalHost;
 
-  useEffect(() => {
-    setMounted(true);
+  const closeMenu = useCallback(() => {
+    setOpen(false);
   }, []);
 
-  const measure = useCallback(() => {
-    const root = wrapRef.current;
-    if (!root) return;
-    const btn = getTriggerButton(root);
-    const r = (btn ?? root).getBoundingClientRect();
-    setCoords({
-      top: r.bottom + GAP_PX,
-      left: r.left,
-      width: r.width,
-    });
+  const toggle = useCallback(() => {
+    setOpen((o) => !o);
   }, []);
 
+  /** 열릴 때·스크롤·리사이즈마다 뷰포트 기준 [left, bottom] 갱신 → 메뉴가 버튼 아래 4px에 고정 */
   useLayoutEffect(() => {
     if (!open) {
-      setCoords(null);
+      setAnchor(null);
       return;
     }
-    measure();
-    const id = requestAnimationFrame(() => measure());
-    return () => cancelAnimationFrame(id);
-  }, [open, measure]);
+    const sync = () => {
+      const next = readButtonViewportAnchor(wrapRef.current);
+      if (next) setAnchor(next);
+    };
+    sync();
+    window.addEventListener("scroll", sync, true);
+    window.addEventListener("resize", sync);
+    const ro = new ResizeObserver(sync);
+    const node = wrapRef.current;
+    if (node) ro.observe(node);
+    return () => {
+      window.removeEventListener("scroll", sync, true);
+      window.removeEventListener("resize", sync);
+      ro.disconnect();
+    };
+  }, [open]);
+
+  useEffect(() => {
+    setPortalClient(true);
+  }, []);
+
+  /** 커스텀 portalContainer 사용 시 라이브러리가 menu-portal에 data-theme을 안 붙임 → 다크 강제 (MenuList 포털은 useEffect에서 생성) */
+  useEffect(() => {
+    if (!open || !menuPortalHost) return;
+    const apply = () => {
+      const portal = menuPortalHost.querySelector('[role="menu-portal"]');
+      if (portal instanceof HTMLElement) {
+        portal.setAttribute("data-theme", "dark");
+        portal.setAttribute("data-theme-product", "md");
+      }
+    };
+    apply();
+    const id = requestAnimationFrame(() => apply());
+    const mo = new MutationObserver(apply);
+    mo.observe(menuPortalHost, { childList: true, subtree: true });
+    return () => {
+      cancelAnimationFrame(id);
+      mo.disconnect();
+    };
+  }, [open, menuPortalHost, anchor]);
+
+  /** M375: 트리거와 같은 너비. 데스크톱 좁은 열: 최소 너비로 오른쪽으로 펼침. */
+  const matchWidth = buttonSize === "l";
 
   useEffect(() => {
     if (!open) return;
-
-    const onDocMouseDown = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (wrapRef.current?.contains(t) || menuRef.current?.contains(t)) return;
-      setOpen(false);
-    };
-
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") closeMenu();
     };
-
-    const onScrollOrResize = () => measure();
-
-    document.addEventListener("mousedown", onDocMouseDown);
     document.addEventListener("keydown", onKeyDown);
-    window.addEventListener("resize", onScrollOrResize);
-    window.addEventListener("scroll", onScrollOrResize, true);
-
-    return () => {
-      document.removeEventListener("mousedown", onDocMouseDown);
-      document.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("resize", onScrollOrResize);
-      window.removeEventListener("scroll", onScrollOrResize, true);
-    };
-  }, [open, measure]);
-
-  const toggle = () => setOpen((v) => !v);
-
-  const menu =
-    mounted &&
-    open &&
-    coords &&
-    createPortal(
-      <div
-        ref={menuRef}
-        role="menu"
-        aria-label="Download options"
-        data-theme="dark"
-        data-theme-product="md"
-        className="box-border overflow-hidden rounded-[8px] bg-[#19191c] p-1 shadow-[0_6px_12px_rgba(0,0,0,0.32)]"
-        style={{
-          position: "fixed",
-          top: coords.top,
-          left: coords.left,
-          width: coords.width,
-          zIndex: 999999,
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor: "rgba(255, 255, 255, 0.12)",
-          color: "#ffffff",
-        }}
-      >
-        <div className="flex w-full flex-col gap-0">
-          {MENU_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="menuitem"
-              className="m-0 box-border flex w-full items-center rounded px-3 py-2 text-left text-[14px] font-normal leading-normal text-white transition-colors hover:bg-[rgba(255,255,255,0.08)]"
-              style={{ color: "#ffffff" }}
-              onClick={() => setOpen(false)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>,
-      document.body,
-    );
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, closeMenu]);
 
   return (
-    <div ref={wrapRef} className="w-full">
+    <>
+      {portalClient
+        ? createPortal(
+            <div
+              ref={setMenuPortalHost}
+              className="pointer-events-none"
+              data-theme="dark"
+              data-theme-product="md"
+              style={{
+                position: "fixed",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                zIndex: 999998,
+              }}
+              aria-hidden
+            />,
+            document.body,
+          )
+        : null}
+      <div ref={wrapRef} className="relative z-10 w-full">
       <Button
-        styleType="mono"
-        size="xl"
+        styleType={open ? "point" : "mono"}
+        size={buttonSize}
         radius="r1"
         variant="solid"
         type="button"
         iconAfter={open ? DropdownUpIcon : DropdownDownIcon}
         aria-expanded={open}
         aria-haspopup="menu"
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
           toggle();
@@ -149,7 +162,32 @@ export function StartNowDownloadDropdown() {
       >
         Start Now
       </Button>
-      {menu}
-    </div>
+      <MenuList
+        isOpen={open && anchor !== null && menuPortalHost !== null}
+        size="l"
+        items={MENU_ITEMS}
+        containerRef={wrapRef}
+        portalContainer={portalContainerRef}
+        placement="bottom-left"
+        offset={GAP_PX}
+        position={anchor ?? undefined}
+        matchWidth={matchWidth}
+        width={matchWidth ? undefined : MENU_LIST_MIN_WIDTH_PX}
+        portalZIndex={999999}
+        closeOnClickOutside
+        onClose={closeMenu}
+        onMenuEvent={(params) => {
+          if (params.type === "click") closeMenu();
+        }}
+        data-theme="dark"
+        data-theme-product="md"
+        aria-label="Download options"
+        className={`${poppins.className} pointer-events-auto [&_.truncate]:overflow-visible [&_.truncate]:text-clip [&_.truncate]:whitespace-nowrap`}
+        style={{
+          fontFamily: `${poppins.style.fontFamily}, Pretendard, system-ui, sans-serif`,
+        }}
+      />
+      </div>
+    </>
   );
 }
