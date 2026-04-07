@@ -1,0 +1,25 @@
+/* Loaded after CLO in plan/layout.tsx — avoids Tailwind/CLO overriding marquee. */
+@keyframes trusted-by-logo-marquee-kf {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.trusted-by-logo-marquee-track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  align-items: center;
+  will-change: transform;
+  /* !important: CLO/Tailwind 유틸이 animation을 덮는 경우 방지 */
+  animation: trusted-by-logo-marquee-kf 80s linear infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trusted-by-logo-marquee-track {
+    animation: none !important;
+  }
+}
