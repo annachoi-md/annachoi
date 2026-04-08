@@ -1,0 +1,34 @@
+/* Loaded after CLO in plan/layout.tsx — avoids Tailwind/CLO overriding marquee. */
+@keyframes trusted-by-logo-marquee-kf {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* 뷰포트: 합성 레이어 + 속도 변수(한 사이클). 길수록 느리고 덜 거칠게 느껴짐 — 예: 140s, 180s */
+.trusted-by-logo-marquee-viewport {
+  --trusted-by-marquee-duration: 110s;
+  isolation: isolate;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.trusted-by-logo-marquee-track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  align-items: center;
+  will-change: transform;
+  backface-visibility: hidden;
+  /* !important: CLO/Tailwind 유틸이 animation을 덮는 경우 방지 */
+  animation: trusted-by-logo-marquee-kf var(--trusted-by-marquee-duration, 110s) linear infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trusted-by-logo-marquee-track {
+    animation: none !important;
+  }
+}
